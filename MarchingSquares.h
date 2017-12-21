@@ -95,10 +95,17 @@ namespace MarchingSquares {
                 case 14: direction = West(); break;
                 default: throw std::runtime_error("Illegal state");
             }
-            result.directions.push_back(direction);
+            if (direction == previous) {
+                // compress
+                result.directions.back().first += direction.first;
+                result.directions.back().second += direction.second;
+            }
+            else {
+                result.directions.push_back(direction);
+                previous = direction;
+            }
             x += direction.first;
             y -= direction.second; // accommodate change of basis
-            previous = direction;
         } while (x != initialX || y != initialY);
 
         result.initialX = initialX;
