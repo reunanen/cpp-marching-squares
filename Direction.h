@@ -4,61 +4,25 @@
  * coordinates (y axis reversed).
  * 
  * @author Tom Gibara
- * 
+ * Ported to C++ by Juha Reunanen
+ *
  */
 
-public enum Direction {
+#pragma once
 
-	// statics
+#include <utility>
 
-	E(1, 0), NE(1, 1),
+namespace MarchingSquares {
+    typedef std::pair<int, int> Direction;
 
-	N(0, 1), NW(-1, 1),
+    Direction MakeDirection(int x, int y) { return std::make_pair(x, y); }
 
-	W(-1, 0), SW(-1, -1),
-
-	S(0, -1), SE(1, -1);
-
-	// fields
-
-	/**
-	 * The horizontal distance moved in this direction within the plane.
-	 */
-
-	public final int planeX;
-
-	/**
-	 * The vertical distance moved in this direction within the plane.
-	 */
-
-	public final int planeY;
-
-	/**
-	 * The horizontal distance moved in this direction in screen coordinates.
-	 */
-
-	public final int screenX;
-
-	/**
-	 * The vertical distance moved in this direction in screen coordinates.
-	 */
-
-	public final int screenY;
-
-	/**
-	 * The euclidean length of this direction's vectors.
-	 */
-
-	public final double length;
-
-	// constructor
-
-	private Direction(int x, int y) {
-		planeX = x;
-		planeY = y;
-		screenX = x;
-		screenY = -y;
-		length = x != 0 && y != 0 ? Math.sqrt(2.0) / 2.0 : 1.0;
-	}
-
+    Direction East()      { return MakeDirection( 1,  0); }
+    Direction Northeast() { return MakeDirection( 1,  1); }
+    Direction North()     { return MakeDirection( 0,  1); }
+    Direction Northwest() { return MakeDirection(-1,  1); }
+    Direction West()      { return MakeDirection(-1,  0); }
+    Direction Southwest() { return MakeDirection(-1, -1); }
+    Direction South()     { return MakeDirection( 0, -1); }
+    Direction Southeast() { return MakeDirection( 1, -1); }
 }

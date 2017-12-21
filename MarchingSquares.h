@@ -1,10 +1,3 @@
-import java.util.ArrayList;
-
-import static Direction.N;
-import static Direction.S;
-import static Direction.E;
-import static Direction.W;
-
 /**
  * A simple implementation of the marching squares algorithm that can identify
  * perimeters in an supplied byte array. The array of data over which this
@@ -15,167 +8,123 @@ import static Direction.W;
  * between zero and non-zero values.
  * 
  * @author Tom Gibara
- * 
+ * Ported to C++ by Juha Reunanen
+ *
  */
 
-public class MarchingSquares {
+#pragma once
 
-	// fields
-	
-	private final byte[] data;
+#include "Direction.h"
+#include "Utility.h"
+#include <vector>
+#include <sstream>
 
-	private final int width;
+namespace MarchingSquares {
 
-	private final int height;
+    struct Result {
+        int initialX = -1;
+        int initialY = -1;
+        std::vector<Direction> directions;
+    };
 
-	// constructors
-	
-	/**
-	 * Creates a new object that can locate perimeter paths in the supplied
-	 * data. The length of the supplied data array must exceed width * height,
-	 * with the data elements in row major order and the top-left-hand data
-	 * element at index zero.
-	 * 
-	 * @param width
-	 *            the width of the data matrix
-	 * @param height
-	 *            the width of the data matrix
-	 * @param data
-	 *            the data elements
-	 */
+    /**
+     * Finds the perimeter between a set of zero and non-zero values which
+     * begins at the specified data element. If no initial point is known,
+     * consider using the convenience method supplied. The paths returned by
+     * this method are always closed.
+     *
+     * The length of the supplied data array must exceed width * height,
+     * with the data elements in row major order and the top-left-hand data
+     * element at index zero.
+     *
+     * @param initialX
+     *            the column of the data matrix at which to start tracing the
+     *            perimeter
+     * @param initialY
+     *            the row of the data matrix at which to start tracing the
+     *            perimeter
+     * @param width
+     *            the width of the data matrix
+     * @param height
+     *            the width of the data matrix
+     * @param data
+     *            the data elements
+     *
+     * @return a closed, anti-clockwise path that is a perimeter of between a
+     *         set of zero and non-zero values in the data.
+     * @throws std::runtime_error
+     *             if there is no perimeter at the specified initial point.
+     */
+    
+    // TODO could be made more efficient by accumulating value during movement
+    Result FindPerimeter(int initialX, int initialY, int width, int height, unsigned char* data) {
+        if (initialX < 0) initialX = 0;
+        if (initialX > width) initialX = width;
+        if (initialY < 0) initialY = 0;
+        if (initialY > height) initialY = height;
 
-	public MarchingSquares(int width, int height, byte[] data) {
-		this.width = width;
-		this.height = height;
-		this.data = data;
-	}
+        int initialValue = value(initialX, initialY, width, height, data);
+        if (initialValue == 0 || initialValue == 15) {
+            std::ostringstream error;
+            error << "Supplied initial coordinates (" << initialX << ", " << initialY << ") do not lie on a perimeter.";
+            throw std::runtime_error(error.str());
+        }
 
-	// accessors
-	
-	/**
-	 * @return the width of the data matrix over which this object is operating
-	 */
-	
-	public int getWidth() {
-		return width;
-	}
+        Result result;
 
-	/**
-	 * @return the width of the data matrix over which this object is operating
-	 */
-	
-	public int getHeight() {
-		return height;
-	}
+        int x = initialX;
+        int y = initialY;
+        Direction previous = MakeDirection(0, 0);
 
-	/**
-	 * @return the data matrix over which this object is operating
-	 */
-	
-	public byte[] getData() {
-		return data;
-	}
-	
-	// methods
-	
-	/**
-	 * Finds the perimeter between a set of zero and non-zero values which
-	 * begins at the specified data element. If no initial point is known,
-	 * consider using the convenience method supplied. The paths returned by
-	 * this method are always closed.
-	 * 
-	 * @param initialX
-	 *            the column of the data matrix at which to start tracing the
-	 *            perimeter
-	 * @param initialY
-	 *            the row of the data matrix at which to start tracing the
-	 *            perimeter
-	 * 
-	 * @return a closed, anti-clockwise path that is a perimeter of between a
-	 *         set of zero and non-zero values in the data.
-	 * @throws IllegalArgumentException
-	 *             if there is no perimeter at the specified initial point.
-	 */
-	
-	// TODO could be made more efficient by accumulating value during movement
-	public Path identifyPerimeter(int initialX, int initialY) {
-		if (initialX < 0) initialX = 0;
-		if (initialX > width) initialX = width;
-		if (initialY < 0) initialY = 0;
-		if (initialY > height) initialY = height;
+        do {
+            Direction direction;
+            switch (value(x, y, width, height, data)) {
+                case  1: direction = North(); break;
+                case  2: direction = East(); break;
+                case  3: direction = East(); break;
+                case  4: direction = West(); break;
+                case  5: direction = North(); break;
+                case  6: direction = previous == North() ? West() : East(); break;
+                case  7: direction = East(); break;
+                case  8: direction = South(); break;
+                case  9: direction = previous == East() ? North() : South(); break;
+                case 10: direction = South(); break;
+                case 11: direction = South(); break;
+                case 12: direction = West(); break;
+                case 13: direction = North(); break;
+                case 14: direction = West(); break;
+                default: throw std::runtime_error("Illegal state");
+            }
+            result.directions.push_back(direction);
+            x += direction.first;
+            y -= direction.second; // accommodate change of basis
+            previous = direction;
+        } while (x != initialX || y != initialY);
 
-		int initialValue = value(initialX, initialY);
-		if (initialValue == 0 || initialValue == 15)
-			throw new IllegalArgumentException(String.format("Supplied initial coordinates (%d, %d) do not lie on a perimeter.", initialX, initialY));
+        result.initialX = initialX;
+        result.initialY = initialY;
 
-		ArrayList<Direction> directions = new ArrayList<Direction>();
+        return result;
+    }
 
-		int x = initialX;
-		int y = initialY;
-		Direction previous = null;
+    /**
+     * A convenience method that locates at least one perimeter in the data with
+     * which this object was constructed. If there is no perimeter (ie. if all
+     * elements of the supplied array are identically zero) then null is
+     * returned.
+     * 
+     * @return a perimeter path obtained from the data, or null
+     */
 
-		do {
-			final Direction direction;
-			switch (value(x, y)) {
-				case  1: direction = N; break;
-				case  2: direction = E; break;
-				case  3: direction = E; break;
-				case  4: direction = W; break;
-				case  5: direction = N; break;
-				case  6: direction = previous == N ? W : E; break;
-				case  7: direction = E; break;
-				case  8: direction = S; break;
-				case  9: direction = previous == E ? N : S; break;
-				case 10: direction = S; break;
-				case 11: direction = S; break;
-				case 12: direction = W; break;
-				case 13: direction = N; break;
-				case 14: direction = W; break;
-				default: throw new IllegalStateException();
-			}
-			directions.add(direction);
-			x += direction.screenX;
-			y += direction.screenY; // accomodate change of basis
-			previous = direction;
-		} while (x != initialX || y != initialY);
-
-		return new Path(initialX, -initialY, directions);
-	}
-
-	/**
-	 * A convenience method that locates at least one perimeter in the data with
-	 * which this object was constructed. If there is no perimeter (ie. if all
-	 * elements of the supplied array are identically zero) then null is
-	 * returned.
-	 * 
-	 * @return a perimeter path obtained from the data, or null
-	 */
-
-	public Path identifyPerimeter() {
-		int size = width * height;
-		for (int i = 0; i < size; i++) {
-			if (data[i] != 0) {
-				return identifyPerimeter(i % width, i / width);
-			}
-		}
-		return null;
-	}
-
-	// private utility methods
-	
-	private int value(int x, int y) {
-		int sum = 0;
-		if (isSet(x, y)) sum |= 1;
-		if (isSet(x + 1, y)) sum |= 2;
-		if (isSet(x, y + 1)) sum |= 4;
-		if (isSet(x + 1, y + 1)) sum |= 8;
-		return sum;
-	}
-
-	private boolean isSet(int x, int y) {
-		return x <= 0 || x > width || y <= 0 || y > height ?
-			false :
-			data[(y - 1) * width + (x - 1)] != 0;
-	}
+    Result FindPerimeter(int width, int height, unsigned char* data) {
+        int size = width * height;
+        for (int i = 0; i < size; i++) {
+            if (data[i] != 0) {
+                return FindPerimeter(i % width, i / width, width, height, data);
+            }
+        }
+        Result result;
+        return result;
+    }
 
 }
