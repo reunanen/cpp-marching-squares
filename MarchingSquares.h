@@ -56,7 +56,6 @@ namespace MarchingSquares {
      *             if there is no perimeter at the specified initial point.
      */
     
-    // TODO could be made more efficient by accumulating value during movement
     Result FindPerimeter(int initialX, int initialY, int width, int height, unsigned char* data) {
         if (initialX < 0) initialX = 0;
         if (initialX > width) initialX = width;
