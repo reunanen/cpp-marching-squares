@@ -96,15 +96,14 @@ namespace MarchingSquares {
             }
             if (direction == previous) {
                 // compress
-                result.directions.back().first += direction.first;
-                result.directions.back().second += direction.second;
+                result.directions.back() += direction;
             }
             else {
                 result.directions.push_back(direction);
                 previous = direction;
             }
-            x += direction.first;
-            y -= direction.second; // accommodate change of basis
+            x += direction.x;
+            y -= direction.y; // accommodate change of basis
         } while (x != initialX || y != initialY);
 
         result.initialX = initialX;

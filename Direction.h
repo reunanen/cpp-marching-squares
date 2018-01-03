@@ -13,9 +13,32 @@
 #include <utility>
 
 namespace MarchingSquares {
-    typedef std::pair<int, int> Direction;
+    struct Direction {
+        Direction() : x(0), y(0) {}
+        Direction(int x, int y) : x(x), y(y) {}
+        int x;
+        int y;
+    };
 
-    Direction MakeDirection(int x, int y) { return std::make_pair(x, y); }
+    bool operator== (const Direction& a, const Direction& b) {
+        return a.x == b.x && a.y == b.y;
+    }
+
+    Direction operator* (const Direction& direction, int multiplier) {
+        return Direction(direction.x * multiplier, direction.y * multiplier);
+    }
+
+    Direction operator+ (const Direction& a, const Direction& b) {
+        return Direction(a.x + b.x, a.y + b.y);
+    }
+
+    Direction& operator+= (Direction& a, const Direction& b) {
+        a.x += b.x;
+        a.y += b.y;
+        return a;
+    }
+
+    Direction MakeDirection(int x, int y) { return Direction(x, y); }
 
     Direction East()      { return MakeDirection( 1,  0); }
     Direction Northeast() { return MakeDirection( 1,  1); }
