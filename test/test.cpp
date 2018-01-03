@@ -47,7 +47,7 @@ TEST_F(MarchingSquaresTest, HandlesSquareCorrectly) {
     const auto perimeter = MarchingSquares::FindPerimeter(1, 1, width, height, &data[0]);
     EXPECT_EQ(perimeter.initialX, 1);
     EXPECT_EQ(perimeter.initialY, 1);
-    EXPECT_EQ(perimeter.directions.size(), 8);
+    EXPECT_EQ(perimeter.directions.size(), 4);
 }
 
 }  // namespace
